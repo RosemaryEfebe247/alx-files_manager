@@ -1,5 +1,7 @@
-const dbClient = require('../utils/db.js');
+const dbClient = require('../utils/db');
+const redisClient = require('../utils/redis');
 const { createHash } = require('crypto');
+const { ObjectId } = require('mongodb');
 
 
 const hashPassword = (password) => {
@@ -8,13 +10,18 @@ const hashPassword = (password) => {
     return sha1Hash.digest('hex');
 }
 
-const postNew = async (req, res) => {
+const userscollection = () => {
     try {
-	var db = dbClient.client.db(dbClient.dbName);
-	var usersCollection = db.collection('users')
+	const db = dbClient.client.db(dbClient.dbName);
+	const usersCollection = db.collection('users');
+	return usersCollection
     } catch (err) {
 	throw new Error('collection error')
     }
+};
+
+const postNew = async (req, res) => {
+    const usersCollection = userscollection()
     
     if (!req.body.email) {
 	res.status(400).json('Missing email');
@@ -59,4 +66,26 @@ const postNew = async (req, res) => {
     res.status(200).json({email:email, id: userId._id});
 }
 
-module.exports = postNew;
+const getMe = async (req, res) => {
+    const usersCollection = userscollection();
+    const token = req.headers['x-token'];
+    try {
+	var getUserId = await redisClient.get(`auth_${token}`);
+    } catch (err) {
+	throw new Error(err)
+    }
+
+    try {
+	var getUser = await usersCollection.findOne({ _id: ObjectId(getUserId)});
+    } catch (err) {
+	throw new Error(err)
+    }
+    console.log(getUser);
+    if (!getUser) {
+	res.status(401).json({'Error': 'unauthorized'});
+	return;
+    }
+    res.status(200).json({id: getUser._id, 'email': getUser.email});
+}
+
+export { postNew, getMe };
