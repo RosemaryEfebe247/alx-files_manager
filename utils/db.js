@@ -1,47 +1,55 @@
-import { MongoClient } from 'mongodb';
-
-
+/**
+ * Class for performing operations with Mongo service
+ */
 class DBClient {
     constructor() {
-        const {
-            DB_HOST = 'localhost',
-            DB_PORT = 27017,
-            DB_DATABASE = 'files_manager'
-        } = process.env;
-        this.dbName = DB_DATABASE;
-        this.url = `mongodb://${DB_HOST}:${DB_PORT}/${DB_DATABASE}`
-        this.client = new MongoClient(this.url, { useUnifiedTopology: true })
-        this.client.connect();
-    }
+	MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
+	    if (!err) {
+		// console.log('Connected successfully to server');
+		   import { MongoClient } from 'mongodb';
 
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_PORT = process.env.DB_PORT || 27017;
+const DB_DATABASE = process.env.DB_DATABASE || 'files_manager';
+const url = `mongodb://${DB_HOST}:${DB_PORT}`;
 
+     this.db = client.db(DB_DATABASE);
+        this.usersCollection = this.db.collection('users');
+        this.filesCollection = this.db.collection('files');
+      } else {
+        console.log(err.message);
+        this.db = false;
+      }
+    });
+  }
 
-    isAlive() {
-        return this.client.isConnected();
-    }
+  /**
+   * Checks if connection to Redis is Alive
+   * @return {boolean} true if connection alive or false if not
+   */
+  isAlive() {
+    return Boolean(this.db);
+  }
 
-    async nbUsers() {
-        this.db = this.client.db();
-        this.collection = this.db.collection('users');
-        try {
-            const numberOfUsers = await this.collection.countDocuments();
-            return numberOfUsers;
-        } catch (err) {
-            console.log(err);
-        }
-    }
+  /**
+   * Returns the number of documents in the collection users
+   * @return {number} amount of users
+   */
+  async nbUsers() {
+    const numberOfUsers = this.usersCollection.countDocuments();
+    return numberOfUsers;
+  }
 
+  /**
+   * Returns the number of documents in the collection files
+   * @return {number} amount of files
+   */
   async nbFiles() {
-      this.db = this.client.db();
-      this.collection = this.db.collection('files');
-        try {
-            const numberOfFiles = await this.collection.countDocuments();
-            return numberOfFiles;
-        } catch (err) {
-            console.log(err);
-        }
-    }
+    const numberOfFiles = this.filesCollection.countDocuments();
+    return numberOfFiles;
+  }
 }
 
 const dbClient = new DBClient();
-module.exports = dbClient;
+
+export default dbClient;
