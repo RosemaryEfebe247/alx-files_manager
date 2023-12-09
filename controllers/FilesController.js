@@ -2,8 +2,8 @@ import { ObjectId } from 'mongodb';
 import mime from 'mime-types';
 import Queue from 'bull';
 import userUtils from '../utils/user';
-import fileUtils from '../utils/file';
-import basicUtils from '../utils/basic';
+//import fileUtils from '../utils/file';
+//import basicUtils from '../utils/basic';
 
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 
@@ -50,7 +50,7 @@ class FilesController {
    * localPath: for a type=file|image, the absolute path to the file save in local
    * Return the new file with a status code 201
    */
-  static async postUpload(request, response) {
+static async postUpload(request, response) {
     const { userId } = await userUtils.getUserIdAndKey(request);
 
     if (!basicUtils.isValidId(userId)) {
@@ -95,38 +95,7 @@ class FilesController {
     return response.status(201).send(newFile);
   }
 
-    : ObjectId(userId),
-});
-
-if (!result) return response.status(404).send({ error: 'Not found' });
-
-const file = fileUtils.processFile(result);
-
-return response.status(200).send(file);
-}
-
   /**
-   * should retrieve all users file documents for a specific
-   * parentId and with pagination
-   *
-   * Retrieve the user based on the token:
-   * If not found, return an error Unauthorized with a status code 401
-   * Based on the query parameters parentId and page, return the list of file document
-   * parentId:
-   * No validation of parentId needed - if the parentId is not linked to any user folder,
-   * returns an empty list
-   * By default, parentId is equal to 0 = the root
-   * Pagination:
-   * Each page should be 20 items max
-   * page query parameter starts at 0 for the first page. If equals to 1, it means it’s
-   * the second page (form the 20th to the 40th), etc
-   * Pagination can be done directly by the aggregate of MongoDB
-   */
-static async getIndex(request, response) {
-    const { userId } = await userUtils.getUserIdAndKey(request);
-
-    const user = await userUtils.getUser({
-	      _i /**
    * Should retrieve the file document based on the ID
    *
    * Retrieve the user based on the token:
@@ -151,7 +120,38 @@ static async getIndex(request, response) {
 
     const result = await fileUtils.getFile({
       _id: ObjectId(fileId),
-      userIdd: ObjectId(userId),
+      userId: ObjectId(userId),
+    });
+
+    if (!result) return response.status(404).send({ error: 'Not found' });
+
+    const file = fileUtils.processFile(result);
+
+    return response.status(200).send(file);
+  }
+
+  /**
+   * should retrieve all users file documents for a specific
+   * parentId and with pagination
+   *
+   * Retrieve the user based on the token:
+   * If not found, return an error Unauthorized with a status code 401
+   * Based on the query parameters parentId and page, return the list of file document
+   * parentId:
+   * No validation of parentId needed - if the parentId is not linked to any user folder,
+   * returns an empty list
+   * By default, parentId is equal to 0 = the root
+   * Pagination:
+   * Each page should be 20 items max
+   * page query parameter starts at 0 for the first page. If equals to 1, it means it’s
+   * the second page (form the 20th to the 40th), etc
+   * Pagination can be done directly by the aggregate of MongoDB
+   */
+static async getIndex(request, response) {
+    const { userId } = await userUtils.getUserIdAndKey(request);
+
+    const user = await userUtils.getUser({
+      _id: ObjectId(userId),
     });
 
     if (!user) return response.status(401).send({ error: 'Unauthorized' });
@@ -194,8 +194,7 @@ static async getIndex(request, response) {
 
     return response.status(200).send(fileList);
   }
-
-/**
+  /**
    * Should set isPublic to true on the file document based on the ID
    *
    * Retrieve the user based on the token:
@@ -216,7 +215,6 @@ static async getIndex(request, response) {
 
     return response.status(code).send(updatedFile);
   }
-
   /**
    * Should set isPublic to false on the file document based on the ID
    *
@@ -238,8 +236,7 @@ static async getIndex(request, response) {
 
     return response.status(code).send(updatedFile);
   }
-
-  /**
+ /**
    * Should return the content of the file document based on the ID
    *
    * If no file document is linked to the ID passed as parameter, return an error
